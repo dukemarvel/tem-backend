@@ -1,0 +1,72 @@
+from rest_framework import generics, permissions, status, views
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+
+from .models import ScormPackage, Sco, RuntimeData
+from .serializers import (
+    ScormPackageUploadSerializer,
+    ScoSerializer,
+    RuntimeDataSerializer,
+)
+from .upload import handle_scorm_upload
+
+# ───────── Upload & SCO list ───────── #
+
+class ScormPackageUploadView(generics.CreateAPIView):
+    queryset = ScormPackage.objects.all()
+    serializer_class = ScormPackageUploadSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def perform_create(self, serializer):
+        package = serializer.save(uploaded_by=self.request.user)
+        handle_scorm_upload(package)
+
+
+class ScoListView(generics.ListAPIView):
+    serializer_class = ScoSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        return Sco.objects.filter(package_id=self.kwargs["package_id"]).order_by("sequence")
+
+# ───────── Launch view ───────── #
+
+class LaunchScoView(views.APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request, sco_id):
+        sco = get_object_or_404(Sco, id=sco_id)
+        return render(request, "scorm_player/launch_iframe.html", {"sco": sco})
+
+# ───────── Runtime API ───────── #
+@method_decorator(csrf_exempt, name="dispatch")
+class RuntimePingView(views.APIView):
+    """
+    POST → append/update runtime data sent by the SCO
+    GET  → fetch current runtime snapshot for this user & SCO
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_object(self, user, sco):
+        obj, _ = RuntimeData.objects.get_or_create(user=user, sco=sco, attempt=1)
+        return obj
+
+    def get(self, request, sco_id):
+        sco = get_object_or_404(Sco, id=sco_id)
+        rd = self.get_object(request.user, sco)
+        return Response(RuntimeDataSerializer(rd).data)
+
+    def post(self, request, sco_id):
+        sco = get_object_or_404(Sco, id=sco_id)
+        rd = self.get_object(request.user, sco)
+
+        serializer = RuntimeDataSerializer(rd, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        # Merge incoming CMI values with existing data
+        rd.data.update(serializer.validated_data.get("data", {}))
+        rd.save()
+
+        return Response(RuntimeDataSerializer(rd).data, status=status.HTTP_202_ACCEPTED)

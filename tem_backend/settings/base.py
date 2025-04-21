@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "auth_app",
     "courses",
+    "scorm_player",
 ]
 
 SITE_ID = 1
@@ -135,10 +136,19 @@ REST_FRAMEWORK = {
 # JWT config
 from datetime import timedelta
 SIMPLE_JWT = {
+    "AUTH_COOKIE": "lms_token",        
+    "AUTH_COOKIE_SECURE": not DEBUG,
+    "AUTH_COOKIE_HTTP_ONLY": True,     
+    "AUTH_COOKIE_SAMESITE": "Lax",    
+    "AUTH_COOKIE_PATH": "/",           
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "BLACKLIST_AFTER_ROTATION": True,
 }
+
+# Make dj‑rest‑auth use SimpleJWT cookie mode
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = "lms_token"
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
