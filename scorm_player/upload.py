@@ -37,6 +37,14 @@ def _get_default_org(tree):
     return org_root.find("ims:organization", NS)
 
 
+def _safe_extract(zf: zipfile.ZipFile, path: Path):
+    for member in zf.namelist():
+        member_path = path / member
+        if not str(member_path.resolve()).startswith(str(path.resolve())):
+            raise Exception(f"Unsafe path in zip: {member}")
+    zf.extractall(path)
+
+
 @transaction.atomic
 def handle_scorm_upload(package):
     """
@@ -50,7 +58,7 @@ def handle_scorm_upload(package):
 
     # -------- unzip
     with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(extract_dir)
+        _safe_extract(zf, extract_dir)
 
     manifest = extract_dir / "imsmanifest.xml"
     if not manifest.exists():

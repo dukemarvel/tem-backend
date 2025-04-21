@@ -11,7 +11,7 @@ from .serializers import (
     ScoSerializer,
     RuntimeDataSerializer,
 )
-from .upload import handle_scorm_upload
+
 
 # ───────── Upload & SCO list ───────── #
 
@@ -22,7 +22,9 @@ class ScormPackageUploadView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         package = serializer.save(uploaded_by=self.request.user)
-        handle_scorm_upload(package)
+        # enqueue background processing
+        from .tasks import extract_and_notify
+        extract_and_notify.delay(package.id)
 
 
 class ScoListView(generics.ListAPIView):
