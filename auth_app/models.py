@@ -22,7 +22,6 @@ class StudentProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="studentprofile"
     )
-    # you can add more student‑specific fields here
 
     def __str__(self):
         return f"Student: {self.user.email}"

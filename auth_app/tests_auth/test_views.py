@@ -5,7 +5,7 @@ from auth_app.models import User, StudentProfile, InstructorProfile
 
 class AuthViewsTest(APITestCase):
     def setUp(self):
-        # Use the namespace from your project URLs.
+        
         self.register_url = reverse("auth_app:auth-register")
         self.login_url = reverse("auth_app:auth-login")
         self.refresh_url = reverse("auth_app:token-refresh")
@@ -64,7 +64,6 @@ class AuthViewsTest(APITestCase):
 
     def test_login_and_me_endpoint(self):
         access, _, user = self._create_and_login_user(role="student")
-        # Test /me/ endpoint using JWT authentication.
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
         me_resp = self.client.get(self.me_url)
         self.assertEqual(me_resp.status_code, status.HTTP_200_OK)
