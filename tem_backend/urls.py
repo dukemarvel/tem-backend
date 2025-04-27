@@ -12,6 +12,7 @@ api_v1_patterns = [
     path("auth-app/", include(("auth_app.urls", "auth_app"), namespace="auth_app")),
     path('courses/', include(('courses.urls', 'courses'), namespace='courses')),
     path("scorm/", include(("scorm_player.urls", "scorm"), namespace="scorm")),
+    path("progress/", include(("progress.urls"), namespace="progress")),
 ]
 
 urlpatterns = [

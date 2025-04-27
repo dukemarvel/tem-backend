@@ -1,10 +1,11 @@
 from django.apps import AppConfig
 
 
-class CoursesConfig(AppConfig):
+class ProgressConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'courses'
+    name = 'progress'
 
     def ready(self):
         # import signals so they’re registered
-        import courses.signals
+        import progress.signals
+        import progress.certification
