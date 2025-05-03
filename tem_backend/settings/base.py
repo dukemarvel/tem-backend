@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "courses",
     "scorm_player",
     "progress",
+    "payments",
 ]
 
 SITE_ID = 1

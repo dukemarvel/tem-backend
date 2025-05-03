@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
 from .models import Course, Lesson, Quiz
+from payments.permissions import IsEnrolled
+
 from .serializers import (
     CourseSerializer, LessonSerializer,
     QuizSerializer
@@ -32,7 +34,7 @@ class LessonViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy", "upload_video"]:
             return [IsInstructor(), IsOwnerInstructor()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsEnrolled()]
 
 
     def create(self, request, *args, **kwargs):
@@ -81,12 +83,12 @@ class QuizViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["create","update","partial_update","destroy"]:
             return [IsInstructor(), IsOwnerInstructor()]
-        return [permissions.IsAuthenticated()]
-    
+        return [permissions.IsAuthenticated(), IsEnrolled()]
     
 
+
 class QuizSubmissionView(viewsets.ViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsEnrolled)
 
     @action(detail=True, methods=["post"], url_path="submit")
     def submit(self, request, pk=None):

@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from payments.permissions import IsEnrolled
 
 
 from .models import ScormPackage, Sco, RuntimeData
@@ -29,7 +30,7 @@ class ScormPackageUploadView(generics.CreateAPIView):
 
 class ScoListView(generics.ListAPIView):
     serializer_class = ScoSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsEnrolled())
 
     def get_queryset(self):
         return Sco.objects.filter(package_id=self.kwargs["package_id"]).order_by("sequence")
@@ -37,7 +38,7 @@ class ScoListView(generics.ListAPIView):
 # ───────── Launch view ───────── #
 
 class LaunchScoView(views.APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsEnrolled())
 
     def get(self, request, sco_id):
         sco = get_object_or_404(Sco, id=sco_id)
@@ -50,7 +51,7 @@ class RuntimePingView(views.APIView):
     POST → append/update runtime data sent by the SCO
     GET  → fetch current runtime snapshot for this user & SCO
     """
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsEnrolled())
 
     def get_object(self, user, sco):
         obj, _ = RuntimeData.objects.get_or_create(user=user, sco=sco, attempt=1)

@@ -1,9 +1,11 @@
 from django.db import models
 from django.conf import settings
+from courses.models import Course
 
 
 class ScormPackage(models.Model):
     title       = models.CharField(max_length=255)
+    course      = models.ForeignKey("courses.Course", on_delete=models.CASCADE, related_name="scorm_packages")
     file        = models.FileField(upload_to="scorm/zips/")
     version     = models.CharField(
         max_length=8,

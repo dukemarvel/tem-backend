@@ -6,6 +6,5 @@ class ProgressConfig(AppConfig):
     name = 'progress'
 
     def ready(self):
-        # import signals so they’re registered
         import progress.signals
         import progress.certification
