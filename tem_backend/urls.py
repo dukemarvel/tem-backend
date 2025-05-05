@@ -14,6 +14,8 @@ api_v1_patterns = [
     path("scorm/", include(("scorm_player.urls", "scorm"), namespace="scorm")),
     path("progress/", include(("progress.urls"), namespace="progress")),
     path("payments/", include(("payments.urls","payments"), namespace="payments")),
+    path("notifications/", include("notifications.urls", namespace="notifications")),
+
 ]
 
 urlpatterns = [

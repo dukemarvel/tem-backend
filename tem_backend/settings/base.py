@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "scorm_player",
     "progress",
     "payments",
+    "notifications",
 ]
 
 SITE_ID = 1
