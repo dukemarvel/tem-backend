@@ -29,7 +29,7 @@ class CertificationSignalsTests(TestCase):
 
         # create a SCORM package
         self.pkg = ScormPackage.objects.create(
-            title="Package A", file="fake.zip", version="1.2", uploaded_by=self.user
+            title="Package A", course=self.course, file="fake.zip", version="1.2", uploaded_by=self.user
         )
 
     def test_lesson_progress_triggers_certification(self):

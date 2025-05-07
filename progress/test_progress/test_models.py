@@ -24,9 +24,13 @@ class ProgressModelTests(TestCase):
         self.lesson1 = Lesson.objects.create(
             course=self.course, title="L1", content="...", order=1
         )
-        # SCORM package
+        # SCORM package (now requires a course)
         self.pkg = ScormPackage.objects.create(
-            title="P1", file="fake.zip", version="1.2", uploaded_by=self.user
+            title="P1",
+            course=self.course,
+            file="fake.zip",
+            version="1.2",
+            uploaded_by=self.user,
         )
 
     def test_lesson_progress_defaults_and_uniqueness(self):
@@ -49,12 +53,9 @@ class ProgressModelTests(TestCase):
 
     def test_certification_defaults_and_uniqueness(self):
         cert = Certification.objects.create(user=self.user, lesson=self.lesson1)
-        # cert_id should be a valid UUID
         self.assertIsInstance(cert.cert_id, uuid.UUID)
-        # creating the same cert again should violate unique constraint
         with self.assertRaises(Exception):
             Certification.objects.create(user=self.user, lesson=self.lesson1)
-        # __str__ includes lesson title
         self.assertIn(self.lesson1.title, str(cert))
 
     def test_scorm_certification_defaults_and_uniqueness(self):

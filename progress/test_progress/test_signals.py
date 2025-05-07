@@ -10,12 +10,9 @@ User = get_user_model()
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 class SignalsTests(TestCase):
     def setUp(self):
-        # common fixtures
         self.user = User.objects.create_user(
             username="alice", email="alice@example.com", password="pass"
         )
-
-        # Course with two lessons
         self.course = Course.objects.create(
             title="Test Course", description="desc", price=0, instructor=self.user
         )
@@ -25,10 +22,12 @@ class SignalsTests(TestCase):
         self.lesson2 = Lesson.objects.create(
             course=self.course, title="L2", content="...", order=2
         )
-
-        # SCORM package with two SCOs
         self.pkg = ScormPackage.objects.create(
-            title="SCORM Pack", file="fake.zip", version="1.2", uploaded_by=self.user
+            title="SCORM Pack",
+            course=self.course,
+            file="fake.zip",
+            version="1.2",
+            uploaded_by=self.user,
         )
         self.sco1 = Sco.objects.create(
             package=self.pkg, identifier="id1", launch_url="u1", title="S1", sequence=0

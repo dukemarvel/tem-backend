@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from payments.permissions import IsEnrolled
-
+from .permissions import IsCourseInstructor
 
 from .models import ScormPackage, Sco, RuntimeData
 from .serializers import (
@@ -19,13 +19,31 @@ from .serializers import (
 class ScormPackageUploadView(generics.CreateAPIView):
     queryset = ScormPackage.objects.all()
     serializer_class = ScormPackageUploadSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated, IsCourseInstructor)
 
     def perform_create(self, serializer):
         package = serializer.save(uploaded_by=self.request.user)
         # enqueue background processing
         from .tasks import extract_and_notify
         extract_and_notify.delay(package.id)
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["request"] = self.request
+        return ctx
+
+
+class ScormPackageListByCourse(generics.ListAPIView):
+    """
+    List all SCORM packages attached to a given course.
+    """
+    serializer_class = ScormPackageUploadSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_queryset(self):
+        course_id = self.kwargs["course_id"]
+        # optionally enforce that request.user is instructor or enrolled
+        return ScormPackage.objects.filter(course_id=course_id)
 
 
 class ScoListView(generics.ListAPIView):

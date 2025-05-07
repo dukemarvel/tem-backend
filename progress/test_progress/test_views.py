@@ -9,8 +9,7 @@ from progress.models import (
     LessonProgress,
     CourseProgress,
     ScormPackageProgress,
-    Certification,
-    ScormCertification,
+    
 )
 
 User = get_user_model()
@@ -29,7 +28,11 @@ class ProgressViewsTests(APITestCase):
             course=self.course, title="L2", content="...", order=1
         )
         self.pkg = ScormPackage.objects.create(
-            title="P2", file="fake2.zip", version="1.2", uploaded_by=self.user
+            title="P2",
+            course=self.course,
+            file="fake2.zip",
+            version="1.2",
+            uploaded_by=self.user,
         )
 
     def test_create_and_list_lesson_progress(self):
