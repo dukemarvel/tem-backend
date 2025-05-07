@@ -1,6 +1,5 @@
 from rest_framework import permissions
 from .models import Enrollment
-from scorm_player.models import ScormPackage
 from courses.models import Course
 
 class IsEnrolled(permissions.BasePermission):
@@ -20,6 +19,8 @@ class IsEnrolled(permissions.BasePermission):
             course = obj
         elif hasattr(obj, "course"):
             course = obj.course
+        elif hasattr(obj, "lesson"):
+           course = obj.lesson.course
         elif hasattr(obj, "package"):
             # scorm_package → its Course
             course = obj.package.course

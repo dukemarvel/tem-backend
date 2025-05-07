@@ -6,6 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from auth_app.models import InstructorProfile, StudentProfile
 from courses.models import Course, Lesson, Quiz, Question, Choice
+from payments.models import Enrollment
 
 User = get_user_model()
 
@@ -108,11 +109,30 @@ class LessonViewSetTest(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
 
-    def test_retrieve(self):
+    def test_retrieve_unenrolled_forbidden(self):
+        """
+        A student who is *not* enrolled should get 403 when fetching a lesson.
+        """
+        self.client.force_authenticate(self.student)
+        res = self.client.get(self.detail_url(self.lesson.id))
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_retrieve_enrolled_allowed(self):
+        """
+        Once the student is enrolled in the course, fetching the lesson should succeed.
+        """
+
+        # enroll the student in this lesson's course
+        Enrollment.objects.create(
+            user=self.student,
+            course=self.course
+        )
+
         self.client.force_authenticate(self.student)
         res = self.client.get(self.detail_url(self.lesson.id))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["title"], "Lsn")
+
 
     def test_create_by_instructor(self):
         self.client.force_authenticate(self.instructor)
@@ -213,10 +233,30 @@ class QuizViewSetTest(APITestCase):
         res = self.client.post(self.list_url, self._make_payload(), format="json")
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_retrieve_contains_questions(self):
+    
+
+    def test_retrieve_by_unenrolled_student_forbidden(self):
+        """
+        Unenrolled students (even on free courses) should get 403 on quiz retrieve.
+        """
+        self.client.force_authenticate(self.student)
+        res = self.client.get(self.detail_url(self.quiz.id))
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+    def test_retrieve_by_enrolled_student_allowed(self):
+        """
+        Once the student is enrolled in the course, retrieving the quiz should succeed.
+        """
+        # enroll the student in this quiz's course
+        Enrollment.objects.create(
+            user=self.student,
+            course=self.lesson.course
+        )
         self.client.force_authenticate(self.student)
         res = self.client.get(self.detail_url(self.quiz.id))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+        # verify payload shape
         self.assertIsInstance(res.data["questions"], list)
 
     def test_update_by_instructor(self):
