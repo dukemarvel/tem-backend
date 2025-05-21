@@ -3,18 +3,70 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-
-from .models import Course, Lesson, Quiz
+from django.db import IntegrityError
 from payments.permissions import IsEnrolled
-
+from .models import (
+    Course, Module, Lesson, Quiz,
+    Review, Promotion, WishlistItem
+)
 from .serializers import (
-    CourseSerializer, LessonSerializer,
-    QuizSerializer
+    CourseSerializer, ModuleSerializer,
+    LessonSerializer, QuizSerializer,
+    ReviewSerializer, PromotionSerializer
 )
 from .permissions import IsInstructor, IsOwnerInstructor
 
+# ─── Modules ───────────────────────────────────────────────────────────
+
+class ModuleViewSet(viewsets.ModelViewSet):
+    queryset         = Module.objects.all()
+    serializer_class = ModuleSerializer
+
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsInstructor(), IsOwnerInstructor()]
+        return [permissions.IsAuthenticated()]
+
+
+# ─── Reviews ───────────────────────────────────────────────────────────
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset         = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.save(user=request.user)
+        except IntegrityError:
+            return Response(
+                {"detail": "You have already reviewed this course."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+# ─── Promotions ───────────────────────────────────────────────────────
+
+class PromotionViewSet(viewsets.ModelViewSet):
+    queryset         = Promotion.objects.all()
+    serializer_class = PromotionSerializer
+
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            # only the course’s instructor may CRUD promotions
+            return [IsInstructor(), IsOwnerInstructor()]
+        return [permissions.IsAuthenticated()]
+
+
+# ─── Courses ──────────────────────────────────────────────────────────
+
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.all()
+    queryset         = Course.objects.all()
     serializer_class = CourseSerializer
 
     def get_permissions(self):
@@ -23,8 +75,19 @@ class CourseViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        # make current user the instructor
         serializer.save(instructor=self.request.user)
+
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def wishlist(self, request, pk=None):
+        course, user = self.get_object(), request.user
+        WishlistItem.objects.get_or_create(user=user, course=course)
+        return Response({"status": "added"}, status=status.HTTP_200_OK)
+
+    @wishlist.mapping.delete
+    def remove_wishlist(self, request, pk=None):
+        course, user = self.get_object(), request.user
+        WishlistItem.objects.filter(user=user, course=course).delete()
+        return Response({"status": "removed"}, status=status.HTTP_200_OK)
 
 class LessonViewSet(viewsets.ModelViewSet):
     queryset = Lesson.objects.all()

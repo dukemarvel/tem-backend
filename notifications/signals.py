@@ -75,6 +75,15 @@ def course_completion_notification(sender, instance, **kwargs):
 def new_lesson_published(sender, instance, created, **kwargs):
     if created:
         course = instance.course
+
+        # lesson.course for view/tests, or else fallback to module.course
+        if instance.course:
+            course = instance.course
+        elif instance.module:
+            course = instance.module.course
+        else:
+            return
+
         for enrollment in course.enrollments.all():
             user = enrollment.user
             verb = f"New lesson available: “{instance.title}” in {course.title}"

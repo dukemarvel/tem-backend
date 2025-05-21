@@ -5,8 +5,9 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from auth_app.models import InstructorProfile, StudentProfile
-from courses.models import Course, Lesson, Quiz, Question, Choice
+from courses.models import Course, Lesson, Quiz, Question, Choice, Review, Promotion, WishlistItem
 from payments.models import Enrollment
+from datetime import date, timedelta
 
 User = get_user_model()
 
@@ -315,3 +316,133 @@ class QuizSubmissionTest(APITestCase):
         bad = reverse("courses:quizzesubmit-submit", args=[99999])
         res = self.client.post(bad, {"answers": {}}, format="json")
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+
+
+class ReviewViewSetTest(APITestCase):
+    def setUp(self):
+        inst = User.objects.create_user(
+            email="inst@rev.com", username="instrev", password="pass"
+        )
+        InstructorProfile.objects.create(user=inst)
+        stud = User.objects.create_user(
+            email="stud@rev.com", username="studrev", password="pass"
+        )
+        StudentProfile.objects.create(user=stud)
+
+        self.course = Course.objects.create(
+            title="RevCourse", description="Desc", price=0, instructor=inst
+        )
+        self.student = stud
+        self.list_url = reverse("courses:reviews-list")
+
+    def test_create_review_by_student(self):
+        self.client.force_authenticate(self.student)
+        payload = {"course": self.course.id, "rating": 4, "text": "Nice course"}
+        res = self.client.post(self.list_url, payload)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data["rating"], 4)
+
+    def test_duplicate_review_forbidden(self):
+        self.client.force_authenticate(self.student)
+        self.client.post(self.list_url, {"course": self.course.id, "rating": 5})
+        res = self.client.post(self.list_url, {"course": self.course.id, "rating": 3})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_list_reviews_requires_auth(self):
+        res = self.client.get(self.list_url)
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class PromotionViewSetTest(APITestCase):
+    def setUp(self):
+        inst = User.objects.create_user(
+            email="inst@promo.com", username="instpromo", password="pass"
+        )
+        InstructorProfile.objects.create(user=inst)
+        stud = User.objects.create_user(
+            email="stud@promo.com", username="studpromo", password="pass"
+        )
+        StudentProfile.objects.create(user=stud)
+
+        self.course = Course.objects.create(
+            title="PromoCourse", description="Desc", price=50, instructor=inst
+        )
+        self.instructor = inst
+        self.student = stud
+        self.list_url = reverse("courses:promotions-list")
+
+    def test_create_promotion_by_instructor(self):
+        self.client.force_authenticate(self.instructor)
+        payload = {
+            "course": self.course.id,
+            "discount_percent": 20,
+            "start_date": date.today(),
+            "end_date": date.today() + timedelta(days=5)
+        }
+        res = self.client.post(self.list_url, payload)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    def test_create_promotion_forbidden_to_student(self):
+        self.client.force_authenticate(self.student)
+        payload = {
+            "course": self.course.id,
+            "discount_percent": 10,
+            "start_date": date.today(),
+            "end_date": date.today() + timedelta(days=3)
+        }
+        res = self.client.post(self.list_url, payload)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_promotions(self):
+        self.client.force_authenticate(self.student)
+        # instructor creates one
+        self.client.force_authenticate(self.instructor)
+        self.client.post(self.list_url, {
+            "course": self.course.id,
+            "discount_percent": 15,
+            "start_date": date.today(),
+            "end_date": date.today() + timedelta(days=2)
+        })
+        # student lists
+        self.client.force_authenticate(self.student)
+        res = self.client.get(self.list_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(res.data), 1)
+
+class WishlistActionTest(APITestCase):
+    def setUp(self):
+        inst = User.objects.create_user(
+            email="inst@wish.com", username="instwish", password="pass"
+        )
+        InstructorProfile.objects.create(user=inst)
+        stud = User.objects.create_user(
+            email="stud@wish.com", username="studwish", password="pass"
+        )
+        StudentProfile.objects.create(user=stud)
+
+        self.course = Course.objects.create(
+            title="WishCourse", description="Desc", price=0, instructor=inst
+        )
+        self.student = stud
+        self.url = reverse("courses:courses-wishlist", args=[self.course.id])
+
+    def test_add_to_wishlist(self):
+        self.client.force_authenticate(self.student)
+        res = self.client.post(self.url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["status"], "added")
+        self.assertTrue(WishlistItem.objects.filter(user=self.student, course=self.course).exists())
+
+    def test_remove_from_wishlist(self):
+        self.client.force_authenticate(self.student)
+        # add first
+        self.client.post(self.url)
+        # then remove
+        res = self.client.delete(self.url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["status"], "removed")
+        self.assertFalse(WishlistItem.objects.filter(user=self.student, course=self.course).exists())
+
+    def test_wishlist_requires_auth(self):
+        res = self.client.post(self.url)
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)

@@ -1,10 +1,57 @@
 from rest_framework import serializers
-from .models import Course, Lesson, Quiz, Question, Choice
+from .models import (
+    Course, Lesson, Quiz, Question, Choice,
+    Tag, Module, Review, Promotion
+    )
+
+# ─── Tag ────────────────────────────────────────────────────────────────
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
+
+
+# ─── Promotion ─────────────────────────────────────────────────────────
+
+class PromotionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Promotion
+        fields = ["id", "course", "discount_percent", "start_date", "end_date"]
+
+
+# ─── Module & Lesson ───────────────────────────────────────────────────
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = ["id", "title", "content", "video_url", "order", "created_at"]
+        fields = [
+            "id", "module", "course",  # <— added
+            "title", "content", "video_url", "order", "created_at"
+        ]
+        read_only_fields = ["created_at"]
+
+
+class ModuleSerializer(serializers.ModelSerializer):
+    lessons = LessonSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Module
+        fields = ["id", "course", "title", "description", "order", "lessons"]
+        read_only_fields = ["lessons"]
+
+
+# ─── Review ────────────────────────────────────────────────────────────
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source="user.id")
+
+    class Meta:
+        model = Review
+        fields = ["id", "user", "course", "rating", "text", "created_at"]
+        read_only_fields = ["user", "created_at"]
+
+
 
 class CourseSerializer(serializers.ModelSerializer):
     # Show lessons nested (read‑only by default for listing)
