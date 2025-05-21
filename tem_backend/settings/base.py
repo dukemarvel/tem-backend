@@ -36,6 +36,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,14 +45,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
-    "django.contrib.sites",         # required by allauth
+    "django.contrib.sites",    
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "dj_rest_auth",
     "dj_rest_auth.registration",
-    "rest_framework.authtoken",
     "auth_app",
     "courses",
     "scorm_player",
@@ -62,12 +62,14 @@ INSTALLED_APPS = [
 
 SITE_ID = 1
 
+
 # Allow email logins via allauth
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_LOGIN_METHODS = {'email'}
 
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -77,6 +79,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 
 ROOT_URLCONF = 'tem_backend.urls'
 
@@ -129,12 +132,26 @@ AUTH_USER_MODEL = "auth_app.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",  
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
 }
+
+REST_AUTH = {
+    "USE_JWT": True,
+    'REGISTER_SERIALIZER':     'auth_app.serializers.CustomRegisterSerializer',
+    'USER_DETAILS_SERIALIZER': 'auth_app.serializers.CustomUserDetailsSerializer',
+    'SESSION_LOGIN': False,
+    "TOKEN_MODEL": None,
+    "JWT_AUTH_COOKIE": "lms_token",
+    "JWT_AUTH_REFRESH_COOKIE": "lms_refresh_token",
+    "JWT_AUTH_COOKIE_USE_CSRF": True,
+    "JWT_AUTH_COOKIE_ENFORCE_CSRF_ON_UNAUTHENTICATED": True,
+    }
+
 
 # JWT config
 from datetime import timedelta
@@ -147,12 +164,15 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "BLACKLIST_AFTER_ROTATION": True,
+    "ROTATE_REFRESH_TOKENS": True,
+  
 }
 
-# Make dj‑rest‑auth use SimpleJWT cookie mode
-REST_USE_JWT = True
-JWT_AUTH_COOKIE = "lms_token"
 
+
+
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -174,7 +194,30 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 STATIC_URL = 'static/'
 
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",             
+    "http://127.0.0.1:5173",            
+    "https://lms-frontend.onrender.com", 
+]
+
+
+CORS_ALLOW_CREDENTIALS = True            # lets browser send/receive cookies
+
+# Django’s CSRF middleware also needs to trust the prod UI origin:
+CSRF_TRUSTED_ORIGINS = [
+    "https://lms-frontend.onrender.com",
+]
+
+
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "x-csrftoken",
+]

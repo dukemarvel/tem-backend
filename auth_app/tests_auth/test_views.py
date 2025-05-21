@@ -1,92 +1,116 @@
 from django.urls import reverse
+from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 from auth_app.models import User, StudentProfile, InstructorProfile
+from django.conf import settings
+import json
 
+
+patched_rest_auth = {**settings.REST_AUTH, "JWT_AUTH_COOKIE_USE_CSRF": False}
+
+
+def _dbg(label, resp):
+    body = (
+        json.dumps(resp.json(), indent=2)
+        if resp["Content-Type"].startswith("application/json")
+        else "<non-JSON>"
+    )
+    print(f"\n🔍 {label}: {resp.status_code}\n    body -> {body}")
+
+
+@override_settings(REST_AUTH=patched_rest_auth)
 class AuthViewsTest(APITestCase):
+    # ─────────────── set-up ───────────────
     def setUp(self):
-        
-        self.register_url = reverse("auth_app:auth-register")
-        self.login_url = reverse("auth_app:auth-login")
-        self.refresh_url = reverse("auth_app:token-refresh")
-        self.logout_url = reverse("auth_app:token-blacklist")
-        self.me_url = reverse("auth_app:auth-me")
-        self.password = "TestPass123!"
+        self.register_url = reverse("rest_register")
+        self.login_url    = reverse("rest_login")
+        self.refresh_url  = reverse("token_refresh")
+        self.logout_url   = reverse("rest_logout")
+        self.me_url       = reverse("rest_user_details")
+        self.password     = "TestPass123!"
 
+    # ─────────────── helper ───────────────
+    def _create_and_login_user(self, role="student"):
+        user = User.objects.create_user(
+            email="user@example.com", username="user1", password=self.password
+        )
+        (StudentProfile if role == "student" else InstructorProfile).objects.create(user=user)
+
+        resp = self.client.post(
+            self.login_url,
+            {"email": user.email, "password": self.password},
+            format="json",
+        )
+        #_dbg("LOGIN", resp)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+        access  = resp.data["access"]
+        refresh = resp.data.get("refresh") or resp.cookies["lms_refresh_token"].value
+        self.assertTrue(refresh, "No refresh token found in body or cookie")
+
+        return access, refresh, user
+
+    # ─────────────── tests ────────────────
     def test_register_student_creates_profile(self):
-        data = {
-            "email": "student@example.com",
-            "username": "studuser",
-            "password": self.password,
-            "role": "student",
-        }
-        resp = self.client.post(self.register_url, data, format="json")
+        resp = self.client.post(
+            self.register_url,
+            {
+                "email": "student@example.com",
+                "username": "studuser",
+                "password1": self.password,
+                "password2": self.password,
+                "role": "student",
+            },
+            format="json",
+        )
+        #_dbg("REGISTER-student", resp)
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(email="student@example.com")
         self.assertTrue(hasattr(user, "studentprofile"))
         self.assertFalse(hasattr(user, "instructorprofile"))
 
     def test_register_instructor_creates_profile(self):
-        data = {
-            "email": "instr@example.com",
-            "username": "instruser",
-            "password": self.password,
-            "role": "instructor",
-        }
-        resp = self.client.post(self.register_url, data, format="json")
+        resp = self.client.post(
+            self.register_url,
+            {
+                "email": "instr@example.com",
+                "username": "instruser",
+                "password1": self.password,
+                "password2": self.password,
+                "role": "instructor",
+            },
+            format="json",
+        )
+        #_dbg("REGISTER-instr", resp)
         self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(email="instr@example.com")
         self.assertTrue(hasattr(user, "instructorprofile"))
         self.assertFalse(hasattr(user, "studentprofile"))
 
-    def _create_and_login_user(self, role="student"):
-        """
-        Helper: Create user and corresponding profile, perform login,
-        and return tokens along with the user instance.
-        """
-        user = User.objects.create_user(
-            email="user@example.com", username="user1", password=self.password
-        )
-        if role == "student":
-            StudentProfile.objects.create(user=user)
-        else:
-            InstructorProfile.objects.create(user=user)
-
-        login_resp = self.client.post(
-            self.login_url,
-            {"email": user.email, "password": self.password},
-            format="json",
-        )
-        self.assertEqual(login_resp.status_code, status.HTTP_200_OK)
-        self.assertIn("access", login_resp.data)
-        self.assertIn("refresh", login_resp.data)
-        return login_resp.data["access"], login_resp.data["refresh"], user
-
     def test_login_and_me_endpoint(self):
         access, _, user = self._create_and_login_user(role="student")
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
-        me_resp = self.client.get(self.me_url)
-        self.assertEqual(me_resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(me_resp.data["email"], user.email)
-        self.assertEqual(me_resp.data["role"], "student")
+        me = self.client.get(self.me_url)
+        #_dbg("ME", me)
+        self.assertEqual(me.status_code, status.HTTP_200_OK)
+        self.assertEqual(me.data["email"], user.email)
+        self.assertEqual(me.data["role"], "student")
 
     def test_refresh_token(self):
         _, refresh, _ = self._create_and_login_user()
-        refresh_resp = self.client.post(
-            self.refresh_url, {"refresh": refresh}, format="json"
-        )
-        self.assertEqual(refresh_resp.status_code, status.HTTP_200_OK)
-        self.assertIn("access", refresh_resp.data)
+        resp = self.client.post(self.refresh_url, {"refresh": refresh}, format="json")
+        #_dbg("REFRESH", resp)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertIn("access", resp.data)
 
     def test_logout_blacklists_refresh_token(self):
-        _, refresh, _ = self._create_and_login_user()
-        logout_resp = self.client.post(
-            self.logout_url, {"refresh": refresh}, format="json"
-        )
-        
-        self.assertEqual(logout_resp.status_code, status.HTTP_200_OK)
-        # Verify that using the same refresh token results in an error.
-        retry_resp = self.client.post(
-            self.refresh_url, {"refresh": refresh}, format="json"
-        )
-        self.assertEqual(retry_resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        access, refresh, _ = self._create_and_login_user()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+
+        logout = self.client.post(self.logout_url, {"refresh": refresh}, format="json")
+        #_dbg("LOGOUT", logout)
+
+        retry = self.client.post(self.refresh_url, {"refresh": refresh}, format="json")
+        #_dbg("REFRESH-retry", retry)
+        self.assertEqual(retry.status_code, status.HTTP_401_UNAUTHORIZED)

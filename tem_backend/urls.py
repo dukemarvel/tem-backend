@@ -2,14 +2,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-
+from auth_app.views import LoginWithRefreshView
 
 
 api_v1_patterns = [
+    path("auth/login/", LoginWithRefreshView.as_view(), name="rest_login"),
     path('auth/', include("dj_rest_auth.urls")),
     path('auth/registration/', include("dj_rest_auth.registration.urls")),
     path('auth/google/', include("allauth.socialaccount.urls")),
-    path("auth-app/", include(("auth_app.urls", "auth_app"), namespace="auth_app")),
     path('courses/', include(('courses.urls', 'courses'), namespace='courses')),
     path("scorm/", include(("scorm_player.urls", "scorm"), namespace="scorm")),
     path("progress/", include(("progress.urls"), namespace="progress")),

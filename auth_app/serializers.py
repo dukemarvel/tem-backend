@@ -1,33 +1,34 @@
+from dj_rest_auth.registration.serializers import RegisterSerializer
+from dj_rest_auth.serializers import UserDetailsSerializer
 from rest_framework import serializers
-from django.contrib.auth.password_validation import validate_password
-from .models import User, InstructorProfile, StudentProfile
+from .models import StudentProfile, InstructorProfile
 
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+class CustomRegisterSerializer(RegisterSerializer):
     role = serializers.ChoiceField(
         choices=(("student", "Student"), ("instructor", "Instructor")),
         write_only=True
     )
 
-    class Meta:
-        model = User
-        fields = ("email", "username", "password", "role")
+    def get_cleaned_data(self):
+        data = super().get_cleaned_data()
+        data['role'] = self.validated_data.get('role')
+        return data
 
-    def create(self, validated_data):
-        role = validated_data.pop("role")
-        user = User.objects.create_user(**validated_data)
+    def save(self, request):
+        user = super().save(request)
+        role = self.cleaned_data['role']
         if role == "instructor":
             InstructorProfile.objects.create(user=user)
         else:
             StudentProfile.objects.create(user=user)
         return user
 
-class UserSerializer(serializers.ModelSerializer):
+
+class CustomUserDetailsSerializer(UserDetailsSerializer):
     role = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = ("id", "email", "username", "role")
+    class Meta(UserDetailsSerializer.Meta):
+        fields = UserDetailsSerializer.Meta.fields + ("role",)
 
     def get_role(self, obj):
         if hasattr(obj, "instructorprofile"):

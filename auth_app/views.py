@@ -1,20 +1,12 @@
-from rest_framework import generics, permissions
-from .serializers import RegisterSerializer, UserSerializer
-from .models import User
+from dj_rest_auth.views import LoginView
 
-from dj_rest_auth.registration.views import SocialLoginView
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = RegisterSerializer
-    permission_classes = (permissions.AllowAny,)
-
-class MeView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
-
-    def get_object(self):
-        return self.request.user
+class LoginWithRefreshView(LoginView):
+    def get_response(self):
+        response = super().get_response()
+        refresh_cookie = response.cookies.get("lms_refresh_token")
+        if refresh_cookie:
+            print("refresh cookie from customzed view: {}".format(refresh_cookie))
+            response.data["refresh"] = refresh_cookie.value
+        else:
+            print("Refresh cookie not generated")
+        return response
