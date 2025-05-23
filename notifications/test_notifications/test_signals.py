@@ -41,7 +41,7 @@ class NotificationSignalsTest(TestCase):
         mock_delay.assert_called_once_with(
             new_user.email,
             "Welcome to Acadamier!",
-            f"Hi {new_user.username}, welcome aboard! 🎉"
+            f"Hi {new_user.username}, welcome aboard!"
         )
 
     @patch.object(tasks.send_notification_email, "delay")

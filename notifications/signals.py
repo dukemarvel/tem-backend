@@ -23,7 +23,7 @@ def welcome_user(sender, request, user, **kwargs):
     send_notification_email.delay(
         user.email,
         "Welcome to Acadamier!",
-        f"Hi {user.username}, welcome aboard! 🎉"
+        f"Hi {user.username}, welcome aboard!"
     )
 
 @receiver(post_save, sender=Enrollment)
@@ -44,12 +44,10 @@ def lesson_progress_notification(sender, instance, **kwargs):
     if instance.is_completed:
         user = instance.user
         course = instance.lesson.course
-        total = course.lessons.count()
-        done = (
-            LessonProgress.objects
-            .filter(user=user, is_completed=True, lesson__course=course)
-            .count()
-        )
+        total = Lesson.objects.filter(course=course).count()
+        done  = LessonProgress.objects.filter(
+            user=user, is_completed=True, lesson__course=course
+        ).count()
         verb = f"You’ve completed {done}/{total} lessons in “{course.title}”"
         Notification.objects.create(recipient=user, verb=verb)
         send_notification_email.delay(
