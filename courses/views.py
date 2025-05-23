@@ -88,6 +88,19 @@ class CourseViewSet(viewsets.ModelViewSet):
         course, user = self.get_object(), request.user
         WishlistItem.objects.filter(user=user, course=course).delete()
         return Response({"status": "removed"}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=["get"], url_path="featured", permission_classes=[permissions.AllowAny])
+    def featured(self, request):
+        """
+        GET /courses/featured/ → all courses where featured=True
+        """
+        qs = self.get_queryset().filter(featured=True)
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            ser = self.get_serializer(page, many=True)
+            return self.get_paginated_response(ser.data)
+        ser = self.get_serializer(qs, many=True)
+        return Response(ser.data)
 
 class LessonViewSet(viewsets.ModelViewSet):
     queryset = Lesson.objects.all()

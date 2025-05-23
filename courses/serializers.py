@@ -59,7 +59,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "price", "instructor", "created_at", "lessons"]
+        fields = ["id", "title", "description", "price", "instructor", "featured", "created_at", "lessons"]
         read_only_fields = ["instructor", "created_at"]
 
     def create(self, validated_data):

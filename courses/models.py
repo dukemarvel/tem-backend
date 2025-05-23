@@ -46,6 +46,8 @@ class Course(models.Model):
                       symmetrical=False,
                       related_name="dependent_courses"
                     )
+    # Home‐feed flag
+    featured      = models.BooleanField(default=False, help_text="Show on home feed carousel")
 
     def __str__(self):
         return f"{self.title} (by {self.instructor.email})"
