@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "progress",
     "payments",
     "notifications",
+    "teams",
 ]
 
 SITE_ID = 1

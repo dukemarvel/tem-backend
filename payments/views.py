@@ -7,6 +7,9 @@ from .models import PaymentTransaction, Enrollment
 from .serializers import InitTransactionSerializer, VerifyTransactionSerializer
 from courses.models import Course
 import uuid
+from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
+import hashlib, hmac, json
 
 paystack = Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
 
@@ -63,10 +66,7 @@ class VerifyTransactionAPIView(generics.GenericAPIView):
 
         return Response({"status": trx.status}, status=status.HTTP_200_OK)
 
-from rest_framework.views import APIView
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.exceptions import PermissionDenied
-import hashlib, hmac, json
+
 
 class PaystackWebhookAPIView(APIView):
     authentication_classes = ()   # Paystack will sign with secret, not a JWT
