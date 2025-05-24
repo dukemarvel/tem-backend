@@ -13,3 +13,12 @@ class InitTransactionSerializer(serializers.Serializer):
 
 class VerifyTransactionSerializer(serializers.Serializer):
     reference = serializers.CharField()
+
+
+class InitTeamTransactionSerializer(serializers.Serializer):
+    organization = serializers.IntegerField()
+    seats        = serializers.IntegerField()
+    courses      = serializers.ListField(child=serializers.IntegerField())
+
+class VerifyTeamTransactionSerializer(serializers.Serializer):
+    reference = serializers.CharField()

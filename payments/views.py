@@ -3,8 +3,10 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from paystackapi.paystack import Paystack
 from django.conf import settings
-from .models import PaymentTransaction, Enrollment
+from .models import PaymentTransaction, Enrollment, BulkPaymentTransaction
 from .serializers import InitTransactionSerializer, VerifyTransactionSerializer
+from .services import process_team_checkout
+from .serializers import InitTeamTransactionSerializer, VerifyTeamTransactionSerializer
 from courses.models import Course
 import uuid
 from rest_framework.views import APIView
@@ -94,3 +96,32 @@ class PaystackWebhookAPIView(APIView):
                 pass
 
         return Response({"received": True})
+    
+
+class InitializeTeamTransactionAPIView(generics.GenericAPIView):
+    serializer_class = InitTeamTransactionSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        s = self.get_serializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        ref = process_team_checkout(request.data, request.user)
+        return Response({"reference": ref}, status=status.HTTP_200_OK)
+
+class VerifyTeamTransactionAPIView(generics.GenericAPIView):
+    serializer_class = VerifyTeamTransactionSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        ref = request.data.get("reference")
+        trx = BulkPaymentTransaction.objects.get(reference=ref)
+        verify = paystack.transaction.verify(reference=ref).get("data", {})
+        if verify.get("status") == "success":
+            trx.status = "success"
+            trx.paid_at = timezone.now()
+            trx.save()
+            # you can signal/post-process seat provisioning here
+        else:
+            trx.status = "failed"
+            trx.save()
+        return Response({"status": trx.status}, status=status.HTTP_200_OK)

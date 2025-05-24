@@ -1,6 +1,27 @@
 from django.db import models
 from django.conf import settings
 from courses.models import Course
+from teams.models import Organization
+
+class BulkPaymentTransaction(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("success", "Success"),
+        ("failed",  "Failed"),
+    ]
+
+    organization   = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    user           = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    seats          = models.PositiveIntegerField()
+    courses        = models.ManyToManyField(Course)
+    reference      = models.CharField(max_length=255, unique=True)
+    amount         = models.PositiveIntegerField(help_text="in kobo")
+    status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    paid_at        = models.DateTimeField(null=True, blank=True)
+    created_at     = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.organization.name} [{self.reference}] → ₦{self.amount/100:.2f}"
 
 class PaymentTransaction(models.Model):
     STATUS_CHOICES = [
