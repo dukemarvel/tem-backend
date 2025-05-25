@@ -26,7 +26,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             "total_seats": total_seats,
             "used_seats": used_seats,
             "pending_invites": org.members.filter(status="pending").count(),
-            # you can add more aggregated metrics here...
+            # more aggregated metrics can be added here...
         })
 
 
@@ -64,9 +64,9 @@ class BulkPurchaseViewSet(viewsets.ModelViewSet):
             return [IsTeamAdmin()]
         return [IsTeamAdmin()]
 
-    def perform_create(self, serializer, request):
-        # tie into your payments flow: generate order, then save reference
-        order_ref = process_team_checkout(self.request.data, request.user) 
+    def perform_create(self, serializer):
+        
+        order_ref = process_team_checkout(self.request.data, self.request.user) 
         serializer.save(
             purchased_by=self.request.user,
             order_reference=order_ref

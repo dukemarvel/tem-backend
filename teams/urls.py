@@ -1,3 +1,4 @@
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     OrganizationViewSet,
@@ -5,9 +6,13 @@ from .views import (
     BulkPurchaseViewSet
 )
 
+app_name = "teams"
+
 router = DefaultRouter()
 router.register("organizations", OrganizationViewSet)
 router.register("members", TeamMemberViewSet)
 router.register("purchases", BulkPurchaseViewSet)
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("", include(router.urls)),
+]

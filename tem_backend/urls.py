@@ -15,7 +15,7 @@ api_v1_patterns = [
     path("progress/", include(("progress.urls"), namespace="progress")),
     path("payments/", include(("payments.urls","payments"), namespace="payments")),
     path("notifications/", include("notifications.urls", namespace="notifications")),
-
+    path('teams/', include(('teams.urls', 'teams'), namespace='teams')),
 ]
 
 urlpatterns = [
