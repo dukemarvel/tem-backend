@@ -2,10 +2,12 @@ from django.contrib.auth import get_user_model
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.utils import timezone
-from .models import Organization, TeamMember, BulkPurchase
+from .models import (
+    Organization, TeamMember, 
+    BulkPurchase, TeamAnalyticsSnapshot)
 from .serializers import (
-    OrganizationSerializer, TeamMemberSerializer, BulkPurchaseSerializer
+    OrganizationSerializer, TeamMemberSerializer, 
+    BulkPurchaseSerializer, TeamAnalyticsSnapshotSerializer
 )
 from .permissions import IsTeamAdmin, IsTeamMember
 from payments.services import process_team_checkout
@@ -26,8 +28,26 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             "total_seats": total_seats,
             "used_seats": used_seats,
             "pending_invites": org.members.filter(status="pending").count(),
-            # more aggregated metrics can be added here...
         })
+    
+    @action(detail=True, methods=["get"], permission_classes=[IsTeamAdmin])
+    def analytics(self, request, pk=None):
+        """
+        Return the latest pre-computed analytics snapshot.
+        """
+        org = self.get_object()
+        snap = TeamAnalyticsSnapshot.objects.filter(
+            organization=org
+        ).order_by("-snapshot_at").first()
+
+        if not snap:
+            return Response(
+                {"detail": "No analytics snapshot available."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = TeamAnalyticsSnapshotSerializer(snap).data
+        return Response(data)
 
 
 class TeamMemberViewSet(viewsets.ModelViewSet):

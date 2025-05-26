@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Organization, TeamMember, BulkPurchase
+from .models import Organization, TeamMember, BulkPurchase, TeamAnalyticsSnapshot
 
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,3 +18,9 @@ class BulkPurchaseSerializer(serializers.ModelSerializer):
         model = BulkPurchase
         fields = ["id","organization","seats","courses","order_reference","purchased_at"]
         read_only_fields = ["purchased_by","order_reference","purchased_at"]
+
+class TeamAnalyticsSnapshotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeamAnalyticsSnapshot
+        fields = ["snapshot_at", "seat_usage", "learning_progress"]
+        read_only_fields = fields

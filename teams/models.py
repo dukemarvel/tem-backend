@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from courses.models import Course
+from django.db.models import JSONField
 
 class Organization(models.Model):
     name       = models.CharField(max_length=255)
@@ -57,3 +58,24 @@ class BulkPurchase(models.Model):
 
     def __str__(self):
         return f"{self.seats} seats for {self.organization.name} on {self.purchased_at:%Y-%m-%d}"
+    
+
+
+class TeamAnalyticsSnapshot(models.Model):
+    organization     = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="analytics_snapshots"
+    )
+    snapshot_at      = models.DateTimeField(auto_now_add=True)
+    seat_usage       = JSONField()  # {"total_seats":…, "used_seats":…, "pending_invites":…}
+    learning_progress = JSONField(
+        null=True,
+        blank=True
+    )  # [ {"user_id":…, "email":…, "completed":…, "total":…, "percent":…}, … ]
+
+    class Meta:
+        ordering = ["-snapshot_at"]
+
+    def __str__(self):
+        return f"Analytics for {self.organization.name} @ {self.snapshot_at:%Y-%m-%d %H:%M}"
