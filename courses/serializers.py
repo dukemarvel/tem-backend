@@ -59,8 +59,16 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "price", "instructor", "featured", "created_at", "lessons"]
+        fields = ["id", "title", "description", "price", "instructor", "featured", "created_at, expires_at", "lessons"]
         read_only_fields = ["instructor", "created_at"]
+
+    
+    def get_expires_at(self, obj):
+        user = self.context["request"].user
+        if not user.is_authenticated:
+            return None
+        enrollment = obj.enrollments.filter(user=user).first()
+        return enrollment.access_expires if enrollment else None
 
     def create(self, validated_data):
         # We’ll fill in `instructor` from request in the view

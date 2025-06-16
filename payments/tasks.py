@@ -3,6 +3,9 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import PaymentTransaction, BulkPaymentTransaction, Enrollment
 from teams.models import TeamMember
+from django.utils import timezone
+from datetime import timedelta
+from notifications.models import Notification
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True)
 def send_payment_receipt(self, transaction_id):
@@ -52,3 +55,24 @@ def provision_team_seats(self, transaction_id):
                 user=member.user,
                 course=course
             )
+
+@shared_task
+def send_expiry_reminders():
+    tomorrow = timezone.now() + timedelta(days=1)
+    qs = Enrollment.objects.filter(
+        access_expires__date = tomorrow.date()
+    )
+    for en in qs:
+        Notification.objects.create(
+            recipient=en.user,
+            verb=f"Your access to “{en.course.title}” expires tomorrow."
+        )
+        # optionally email …
+
+@shared_task
+def deactivate_expired_enrollments():
+    now = timezone.now()
+    Enrollment.objects.filter(
+        access_expires__lt = now,
+        access_expires__isnull = False
+    ).update()  # nothing to change—`is_active` is property-based

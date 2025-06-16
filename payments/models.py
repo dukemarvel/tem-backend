@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from courses.models import Course
 from teams.models import Organization
+from django.utils import timezone
 
 class BulkPaymentTransaction(models.Model):
     STATUS_CHOICES = [
@@ -58,6 +59,23 @@ class Enrollment(models.Model):
                                    on_delete=models.CASCADE,
                                    related_name="enrollments")
     enrolled_at= models.DateTimeField(auto_now_add=True)
+
+    # NEW —
+    access_expires = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Null = lifetime. Otherwise access ends at this timestamp."
+    )
+
+    @property
+    def is_active(self) -> bool:
+        """
+        True  → lifetime OR not-yet-expired
+        False → expired (and time-limited)
+        """
+        return (
+            self.access_expires is None
+            or self.access_expires > timezone.now()
+        )
 
     class Meta:
         unique_together = ("user", "course")

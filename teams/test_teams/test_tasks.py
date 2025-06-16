@@ -9,13 +9,24 @@ from django.db.models.signals import post_save
 from progress.signals import update_course_progress
 from notifications.signals import lesson_progress_notification
 
-# Prevent CourseProgress recalculation signal from running in these tests
-post_save.disconnect(update_course_progress, sender=LessonProgress)
-post_save.disconnect(lesson_progress_notification, sender=LessonProgress)
 
 User = get_user_model()
 
 class TasksTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Disconnect only for this test class
+        post_save.disconnect(update_course_progress, sender=LessonProgress)
+        post_save.disconnect(lesson_progress_notification, sender=LessonProgress)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Re-connect so other tests aren’t affected
+        post_save.connect(update_course_progress, sender=LessonProgress)
+        post_save.connect(lesson_progress_notification, sender=LessonProgress)
+        super().tearDownClass()
+
     def setUp(self):
         # Create users
         self.admin = User.objects.create_user(

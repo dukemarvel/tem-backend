@@ -4,27 +4,29 @@ from courses.models import Course
 
 class IsEnrolled(permissions.BasePermission):
     """
-    Allows access if the user is:
-     - the instructor of the course
-     - enrolled in the course
+    Allows access when the requester is:
+      • the instructor of the course, OR
+      • enrolled and their access has not expired
     """
     def has_object_permission(self, request, view, obj):
         user = request.user
-        # instructors always allowed
+
+        # ―― 1) Instructors always sail through ―――――――――――――――――――――――――――
         if hasattr(obj, "instructor") and obj.instructor == user:
             return True
 
-        # resolve the course
+        # ―― 2) Work out which course this object belongs to ―――――――――――――――
         if isinstance(obj, Course):
             course = obj
         elif hasattr(obj, "course"):
             course = obj.course
         elif hasattr(obj, "lesson"):
-           course = obj.lesson.course
+            course = obj.lesson.course
         elif hasattr(obj, "package"):
-            # scorm_package → its Course
             course = obj.package.course
         else:
             return False
 
-        return Enrollment.objects.filter(user=user, course=course).exists()
+        # ―― 3) Fetch the enrollment and check *is_active* ――――――――――――――――――
+        enrollment = Enrollment.objects.filter(user=user, course=course).first()
+        return bool(enrollment and enrollment.is_active)

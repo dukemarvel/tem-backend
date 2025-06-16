@@ -12,6 +12,7 @@ import uuid
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 import hashlib, hmac, json
+from datetime import timedelta
 
 paystack = Paystack(secret_key=settings.PAYSTACK_SECRET_KEY)
 
@@ -63,7 +64,16 @@ class VerifyTransactionAPIView(generics.GenericAPIView):
         trx.status = "success" if status_str == "success" else "failed"
         if trx.status == "success":
             trx.paid_at = timezone.now()
-            Enrollment.objects.get_or_create(user=trx.user, course=trx.course)
+
+            # --- determine expiry ----------------------------
+            course = trx.course
+            days   = course.default_access_days  # None → lifetime
+            expires = timezone.now() + timedelta(days=days) if days else None
+            # --------------------------------------------------
+
+            Enrollment.objects.get_or_create(user=trx.user, 
+                                             course=trx.course,
+                                             defaults = {"access_expires": expires})
         trx.save()
 
         return Response({"status": trx.status}, status=status.HTTP_200_OK)

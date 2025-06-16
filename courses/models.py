@@ -29,6 +29,11 @@ class Course(models.Model):
                     )
     created_at    = models.DateTimeField(auto_now_add=True)
 
+    default_access_days = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Leave blank for lifetime - set e.g. 14 or 30 for timed access"
+    )
+
     # Marketing attrs
     promo_image   = models.ImageField(upload_to="course_images/", blank=True, null=True)
     promo_video   = models.FileField(upload_to="course_videos/", blank=True, null=True)
