@@ -46,6 +46,24 @@ class CourseViewSetTest(APITestCase):
         res = self.client.get(self.detail_url(self.course.id))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["title"], "Existing")
+        # lifetime (no enrolment) → expires_at should be null/None
+        self.assertIsNone(res.data["expires_at"])
+
+
+    def test_retrieve_with_timed_enrollment(self):
+        """If the student has a time-boxed enrolment, API returns the timestamp."""
+        from django.utils import timezone
+        
+
+        # enrol student for 7 days
+        exp = timezone.now() + timedelta(days=7)
+        Enrollment.objects.create(user=self.student, course=self.course,
+                                  access_expires=exp)
+
+        self.client.force_authenticate(self.student)
+        res = self.client.get(self.detail_url(self.course.id))
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["expires_at"][:19], exp.isoformat()[:19])  # second-level match
 
     def test_create_by_instructor(self):
         self.client.force_authenticate(self.instructor)
@@ -133,6 +151,19 @@ class LessonViewSetTest(APITestCase):
         res = self.client.get(self.detail_url(self.lesson.id))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["title"], "Lsn")
+
+    def test_retrieve_expired_forbidden(self):
+        """If enrolment is expired, access must be blocked (403)."""
+        from django.utils import timezone
+        from datetime import timedelta
+
+        past = timezone.now() - timedelta(days=1)
+        Enrollment.objects.create(user=self.student, course=self.course,
+                                  access_expires=past)
+
+        self.client.force_authenticate(self.student)
+        res = self.client.get(self.detail_url(self.lesson.id))
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
 
     def test_create_by_instructor(self):

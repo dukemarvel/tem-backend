@@ -56,19 +56,24 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     # Show lessons nested (read‑only by default for listing)
     lessons = LessonSerializer(many=True, read_only=True)
+    expires_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "price", "instructor", "featured", "created_at, expires_at", "lessons"]
+        fields = ["id", "title", "description", "price", "instructor", "featured", "created_at", "expires_at", "lessons"]
         read_only_fields = ["instructor", "created_at"]
 
     
     def get_expires_at(self, obj):
-        user = self.context["request"].user
-        if not user.is_authenticated:
+        """Return ISO timestamp (or None) for the current user’s enrollment."""
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
             return None
-        enrollment = obj.enrollments.filter(user=user).first()
-        return enrollment.access_expires if enrollment else None
+        en = obj.enrollments.filter(user=request.user).first()
+        if not en or not en.access_expires: 
+            return None 
+        # Always ISO-8601 string so tests & JS code can treat it uniformly 
+        return en.access_expires.isoformat()
 
     def create(self, validated_data):
         # We’ll fill in `instructor` from request in the view
