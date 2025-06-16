@@ -25,6 +25,14 @@ class PaymentsViewsTest(TestCase):
             title="Ct", description="Desc",
             price=Decimal("10.00"), instructor=self.user
         )
+
+        # 14-day course 
+        self.course_14 = Course.objects.create( 
+            title="Timed", description="TT", 
+            price=Decimal("20.00"), 
+            instructor=self.user, 
+            default_access_days=14, 
+        )
         self.org = Organization.objects.create(
             name="OrgTest", admin=self.user
         )
@@ -101,12 +109,45 @@ class PaymentsViewsTest(TestCase):
             Enrollment.objects.filter(user=self.user, course=self.course).exists()
         )
 
+    @patch("payments.views.paystack.transaction.verify") 
+    def test_verify_transaction_sets_expiry(self, mock_verify): 
+        """Enrolment for a course with default_access_days must carry timestamp.""" 
+        trx = PaymentTransaction.objects.create( 
+            user=self.user, course=self.course_14, 
+            reference="ref-timed", amount=2000 
+        ) 
+        mock_verify.return_value = {"data": {"status": "success"}} 
+        self.client.post(self.verify_url, {"reference": "ref-timed"}, format="json") 
+ 
+        en = Enrollment.objects.get(user=self.user, course=self.course_14) 
+        self.assertIsNotNone(en.access_expires)            # timed, not lifetime  
+
     def test_verify_transaction_unauthenticated(self):
         self.client.force_authenticate(user=None)
         resp = self.client.post(
             self.verify_url, {"reference": "whatever"}, format="json"
         )
         self.assertEqual(resp.status_code, 401)
+
+    def test_webhook_sets_expiry_for_timed_course(self): 
+        """Webhook path should mirror verify-view behaviour for timed courses.""" 
+        trx = PaymentTransaction.objects.create( 
+            user=self.user, course=self.course_14, 
+            reference="ref-web14", amount=2000 
+        ) 
+ 
+        body = json.dumps( 
+            {"event": "charge.success", "data": {"reference": "ref-web14"}} 
+        ).encode() 
+        sig = hmac.new(settings.PAYSTACK_SECRET_KEY.encode(), body, hashlib.sha512).hexdigest() 
+ 
+        self.client.post( 
+            self.webhook_url, data=body, content_type="application/json", 
+            HTTP_X_PAYSTACK_SIGNATURE=sig, 
+        ) 
+ 
+        en = Enrollment.objects.get(user=self.user, course=self.course_14) 
+        self.assertIsNotNone(en.access_expires)
 
     def test_webhook_charge_success(self):
         trx = PaymentTransaction.objects.create(

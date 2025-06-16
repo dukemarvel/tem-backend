@@ -101,7 +101,17 @@ class PaystackWebhookAPIView(APIView):
                     trx.status = "success"
                     trx.paid_at = timezone.now()
                     trx.save()
-                    Enrollment.objects.get_or_create(user=trx.user, course=trx.course)
+                    #Enrollment.objects.get_or_create(user=trx.user, course=trx.course)
+                    course  = trx.course
+                    days    = course.default_access_days
+                    expires = timezone.now() + timedelta(days=days) if days else None
+
+                    Enrollment.objects.get_or_create( 
+                        user=trx.user, 
+                        course=course, 
+                        defaults={"access_expires": expires}, 
+                    )
+
             except PaymentTransaction.DoesNotExist:
                 pass
 
