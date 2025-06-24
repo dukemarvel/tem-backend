@@ -8,6 +8,25 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class Category(models.Model):
+    name   = models.CharField(max_length=100, unique=True)
+    slug   = models.SlugField(max_length=100, unique=True)
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        related_name="children",
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        verbose_name_plural = "Categories"
+
+    def __str__(self):
+        return self.name
+
 
 # ——— Core Course Models ——— #
 
@@ -53,6 +72,13 @@ class Course(models.Model):
                     )
     # Home‐feed flag
     featured      = models.BooleanField(default=False, help_text="Show on home feed carousel")
+
+    # Structured category (hierarchical) 
+    categories = models.ManyToManyField( 
+        "Category", 
+        blank=True, 
+        related_name="courses" 
+    )
 
     def __str__(self):
         return f"{self.title} (by {self.instructor.email})"

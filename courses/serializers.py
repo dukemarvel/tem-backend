@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Course, Lesson, Quiz, Question, Choice,
-    Tag, Module, Review, Promotion
+    Tag, Module, Review, Promotion, Category
     )
 
 # ─── Tag ────────────────────────────────────────────────────────────────
@@ -11,6 +11,17 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ["id", "name"]
 
+# ─── Category ───────────────────────────────────────────────────────────
+
+class CategorySerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ["id", "name", "slug", "parent", "children"]
+
+    def get_children(self, obj):
+        return CategorySerializer(obj.children.all(), many=True).data
 
 # ─── Promotion ─────────────────────────────────────────────────────────
 
@@ -56,11 +67,16 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     # Show lessons nested (read‑only by default for listing)
     lessons = LessonSerializer(many=True, read_only=True)
+    categories = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Category.objects.all(),
+        required=False
+    )
     expires_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "price", "instructor", "featured", "created_at", "expires_at", "lessons"]
+        fields = ["id", "title", "description", "price", "instructor", "categories", "featured", "created_at", "expires_at", "lessons"]
         read_only_fields = ["instructor", "created_at"]
 
     

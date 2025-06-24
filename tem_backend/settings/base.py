@@ -65,8 +65,17 @@ SITE_ID = 1
 
 
 # Allow email logins via allauth
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_LOGIN_METHODS = {'email'}
+
+
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Allauth 0.63+
+ACCOUNT_SIGNUP_FIELDS = [
+    "email*",
+    "first_name*",
+    "last_name*",
+    "password1*",
+    "password2*",
+]
 
 
 MIDDLEWARE = [
@@ -139,6 +148,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
 
 REST_AUTH = {
@@ -150,14 +160,14 @@ REST_AUTH = {
     "JWT_AUTH_COOKIE": "lms_token",
     "JWT_AUTH_REFRESH_COOKIE": "lms_refresh_token",
     "JWT_AUTH_COOKIE_USE_CSRF": True,
-    "JWT_AUTH_COOKIE_ENFORCE_CSRF_ON_UNAUTHENTICATED": True,
+    "JWT_AUTH_COOKIE_ENFORCE_CSRF_ON_UNAUTHENTICATED": False,
     }
 
 
 # JWT config
 from datetime import timedelta
 SIMPLE_JWT = {
-    "AUTH_COOKIE": "lms_token",        
+    "AUTH_COOKIE": "lms_refresh_token",        
     "AUTH_COOKIE_SECURE": not DEBUG,
     "AUTH_COOKIE_HTTP_ONLY": True,     
     "AUTH_COOKIE_SAMESITE": "Lax",    
@@ -203,10 +213,13 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",             
-    "http://127.0.0.1:5173",            
+    "http://localhost:3000",             
+    "http://127.0.0.1:3000",
+    "http://192.168.8.101:3000",
+    "http://[::1]:3000",            
     "https://lms-frontend.onrender.com", 
 ]
+
 
 
 CORS_ALLOW_CREDENTIALS = True            # lets browser send/receive cookies
@@ -214,6 +227,10 @@ CORS_ALLOW_CREDENTIALS = True            # lets browser send/receive cookies
 # Django’s CSRF middleware also needs to trust the prod UI origin:
 CSRF_TRUSTED_ORIGINS = [
     "https://lms-frontend.onrender.com",
+    'http://localhost:3000',
+    "http://127.0.0.1:3000",
+    "http://192.168.8.101:3000",
+    "http://[::1]:3000",
 ]
 
 

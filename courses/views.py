@@ -7,14 +7,34 @@ from django.db import IntegrityError
 from payments.permissions import IsEnrolled
 from .models import (
     Course, Module, Lesson, Quiz,
-    Review, Promotion, WishlistItem
+    Review, Promotion, WishlistItem, Category
 )
 from .serializers import (
     CourseSerializer, ModuleSerializer,
     LessonSerializer, QuizSerializer,
-    ReviewSerializer, PromotionSerializer
+    ReviewSerializer, PromotionSerializer, CategorySerializer
 )
 from .permissions import IsInstructor, IsOwnerInstructor
+
+from django_filters import rest_framework as filters
+
+# ─── Filter ───────────────────────────────────────────────────────────
+
+class CourseFilter(filters.FilterSet):
+    categories__slug = filters.CharFilter(field_name="categories__slug")
+
+    class Meta:
+        model = Course
+        fields = ["categories__slug", "tags__name", "difficulty"]
+
+# ─── Categories ───────────────────────────────────────────────────────────
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    GET /courses/categories/ → list all categories (with nested children)
+    """
+    queryset = Category.objects.filter(parent__isnull=True)
+    serializer_class = CategorySerializer
 
 # ─── Modules ───────────────────────────────────────────────────────────
 
@@ -68,6 +88,7 @@ class PromotionViewSet(viewsets.ModelViewSet):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset         = Course.objects.all()
     serializer_class = CourseSerializer
+    filterset_class = CourseFilter
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
