@@ -13,6 +13,14 @@ class Tag(models.Model):
 class Category(models.Model):
     name   = models.CharField(max_length=100, unique=True)
     slug   = models.SlugField(max_length=100, unique=True)
+    subtitle = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    image = models.ImageField(
+      upload_to="category_images/", 
+      null=True, 
+      blank=True, 
+      help_text="Optional image for this category" 
+  )
     parent = models.ForeignKey(
         "self",
         null=True,
