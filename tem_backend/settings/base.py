@@ -141,8 +141,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = "auth_app.User"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "dj_rest_auth.jwt_auth.JWTCookieAuthentication",  
+    "DEFAULT_AUTHENTICATION_CLASSES": ( 
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
@@ -157,27 +156,18 @@ REST_AUTH = {
     'USER_DETAILS_SERIALIZER': 'auth_app.serializers.CustomUserDetailsSerializer',
     'SESSION_LOGIN': False,
     "TOKEN_MODEL": None,
-    "JWT_AUTH_COOKIE": "lms_token",
-    "JWT_AUTH_REFRESH_COOKIE": "lms_refresh_token",
-    "JWT_AUTH_COOKIE_USE_CSRF": True,
-    "JWT_AUTH_COOKIE_ENFORCE_CSRF_ON_UNAUTHENTICATED": False,
     }
 
 
 # JWT config
 from datetime import timedelta
 SIMPLE_JWT = {
-    "AUTH_COOKIE": "lms_refresh_token",        
-    "AUTH_COOKIE_SECURE": not DEBUG,
-    "AUTH_COOKIE_HTTP_ONLY": True,     
-    "AUTH_COOKIE_SAMESITE": "Lax",    
-    "AUTH_COOKIE_PATH": "/",           
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "BLACKLIST_AFTER_ROTATION": True,
     "ROTATE_REFRESH_TOKENS": True,
-  
+    "BLACKLIST_AFTER_ROTATION": True,
 }
+
 
 
 
@@ -221,7 +211,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-
+"""
 CORS_ALLOW_CREDENTIALS = True            # lets browser send/receive cookies
 
 # Django’s CSRF middleware also needs to trust the prod UI origin:
@@ -239,3 +229,5 @@ CORS_ALLOW_HEADERS = [
     "content-type",
     "x-csrftoken",
 ]
+
+"""
