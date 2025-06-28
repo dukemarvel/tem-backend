@@ -8,9 +8,13 @@ class IsTeamAdmin(permissions.BasePermission):
 
 class IsTeamMember(permissions.BasePermission):
     def has_permission(self, request, view):
-        org_id = view.kwargs.get("organization") or request.data.get("organization")
+        org_id = (
+            view.kwargs.get("pk") or
+            request.data.get("organization") or
+            request.query_params.get("organization")
+        )
         return TeamMember.objects.filter(
             organization_id=org_id,
             user=request.user,
-            status="active"
+            status=TeamMember.ACTIVE
         ).exists()

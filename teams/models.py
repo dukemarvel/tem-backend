@@ -10,8 +10,16 @@ class Organization(models.Model):
                                    related_name="organizations")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Business sign-up extras
+    company_size         = models.PositiveIntegerField(null=True, blank=True)
+    team_size            = models.PositiveIntegerField(null=True, blank=True)
+    heard_about          = models.CharField(max_length=255, blank=True)
+    organizational_needs = models.TextField(blank=True)
+
     def __str__(self):
         return f"{self.name} (admin: {self.admin.email})"
+    
+
 
 
 class TeamMember(models.Model):

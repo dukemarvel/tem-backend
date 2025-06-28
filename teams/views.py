@@ -6,11 +6,43 @@ from .models import (
     Organization, TeamMember, 
     BulkPurchase, TeamAnalyticsSnapshot)
 from .serializers import (
-    OrganizationSerializer, TeamMemberSerializer, 
+    TeamRegisterSerializer, OrganizationSerializer, TeamMemberSerializer, 
     BulkPurchaseSerializer, TeamAnalyticsSnapshotSerializer
 )
 from .permissions import IsTeamAdmin, IsTeamMember
 from payments.services import process_team_checkout
+from dj_rest_auth.registration.views import RegisterView
+from dj_rest_auth.views import LoginView
+from rest_framework.exceptions import PermissionDenied
+
+class TeamRegisterView(RegisterView):
+    """
+    POST /api/v1/teams/register/  → uses TeamRegisterSerializer
+    """
+    serializer_class = TeamRegisterSerializer
+
+
+class TeamLoginView(LoginView):
+    """
+    POST /api/v1/teams/login/
+    Same payload as normal login + "organization":<org_id>.
+    Denies access if user isn’t an ACTIVE member of that org.
+    """
+    def get_response(self):
+        response = super().get_response()
+        org_id = self.request.data.get("organization")
+        user   = self.request.user
+
+        # enforce membership
+        if not TeamMember.objects.filter(
+            organization_id=org_id,
+            user=user,
+            status=TeamMember.ACTIVE
+        ).exists():
+            raise PermissionDenied("Not an active member of that team.")
+
+        return response
+
 
 class OrganizationViewSet(viewsets.ModelViewSet):
     queryset = Organization.objects.all()
