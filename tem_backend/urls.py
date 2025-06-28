@@ -2,13 +2,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenBlacklistView
 
 
 
 api_v1_patterns = [
     path('auth/login/',  TokenObtainPairView.as_view(),      name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(),  name='token_refresh'),
+    path('auth/logout/', TokenBlacklistView.as_view(),    name='token_blacklist'),
     path('auth/', include("dj_rest_auth.urls")),
     path('auth/registration/', include("dj_rest_auth.registration.urls")),
     path('auth/google/', include("allauth.socialaccount.urls")),
