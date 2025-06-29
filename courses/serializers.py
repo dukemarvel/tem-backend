@@ -68,9 +68,9 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     # Show lessons nested (read‑only by default for listing)
     lessons = LessonSerializer(many=True, read_only=True)
-    instructor    = serializers.ReadOnlyField(source="instructor.email")
+    instructor    = serializers.PrimaryKeyRelatedField(read_only=True)
     students      = serializers.SerializerMethodField()
-    level         = serializers.CharField(source="difficulty")
+    level         = serializers.ReadOnlyField(source="difficulty")
     imageUrl      = serializers.SerializerMethodField()
     categorySlug  = serializers.SerializerMethodField()
     categories = serializers.PrimaryKeyRelatedField(
@@ -115,8 +115,12 @@ class CourseSerializer(serializers.ModelSerializer):
         return en.access_expires.isoformat()
 
     def create(self, validated_data):
-        # We’ll fill in `instructor` from request in the view
-        return Course.objects.create(**validated_data)
+        # pull out many-to-many before creating
+        categories = validated_data.pop("categories", [])
+        course = Course.objects.create(**validated_data)
+        if categories:
+            course.categories.set(categories)
+        return course
 
 
 class ChoiceSerializer(serializers.ModelSerializer):
