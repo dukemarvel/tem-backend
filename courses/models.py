@@ -47,7 +47,10 @@ class Course(models.Model):
     ]
 
     title         = models.CharField(max_length=255)
+    subtitle      = models.CharField(max_length=255, blank=True)
     description   = models.TextField()
+    about         = models.TextField(blank=True, help_text="Long-form description")
+    learn         = models.JSONField(default=list, blank=True, help_text="What students will learn (list of strings)")
     price         = models.DecimalField(max_digits=8, decimal_places=2, default=0)
     instructor    = models.ForeignKey(
                       settings.AUTH_USER_MODEL,
@@ -55,6 +58,7 @@ class Course(models.Model):
                       related_name="courses_taught"
                     )
     created_at    = models.DateTimeField(auto_now_add=True)
+    language      = models.CharField(max_length=50, blank=True)
 
     default_access_days = models.PositiveIntegerField(
         null=True, blank=True,
@@ -125,6 +129,7 @@ class Lesson(models.Model):
                  )
     title      = models.CharField(max_length=255)
     content    = models.TextField()
+    duration   = models.DurationField(blank=True, null=True, help_text="Estimated time for this lesson")
     video      = models.FileField(upload_to="videos/", blank=True, null=True)
     video_url  = models.URLField(blank=True, null=True)
     order      = models.PositiveIntegerField(default=0)

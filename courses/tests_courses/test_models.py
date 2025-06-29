@@ -13,7 +13,7 @@ User = get_user_model()
 class CourseModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email="inst@example.com", username="inst", password="pass"
+            email="inst@example.com", password="pass"
         )
         InstructorProfile.objects.create(user=self.user)
         self.course = Course.objects.create(
@@ -36,7 +36,7 @@ class CourseModelTest(TestCase):
 class ModuleModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email="modinst@example.com", username="modinst", password="pass"
+            email="modinst@example.com", password="pass"
         )
         InstructorProfile.objects.create(user=self.user)
         self.course = Course.objects.create(
@@ -58,7 +58,7 @@ class ModuleModelTest(TestCase):
 class LessonModelTest(TestCase):
     def setUp(self):
         user = User.objects.create_user(
-            email="inst2@example.com", username="inst2", password="pass"
+            email="inst2@example.com",  password="pass"
         )
         InstructorProfile.objects.create(user=user)
         course = Course.objects.create(
@@ -94,7 +94,7 @@ class LessonModelTest(TestCase):
 class QuizQuestionChoiceModelTest(TestCase):
     def setUp(self):
         user = User.objects.create_user(
-            email="qinst@example.com", username="qinst", password="pass"
+            email="qinst@example.com",  password="pass"
         )
         InstructorProfile.objects.create(user=user)
         course = Course.objects.create(
@@ -133,11 +133,11 @@ class TagModelTest(TestCase):
 class ReviewModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email="rev@example.com", username="rev", password="pass"
+            email="rev@example.com",  password="pass"
         )
         StudentProfile.objects.create(user=self.user)
         inst = User.objects.create_user(
-            email="instrev@example.com", username="instrev", password="pass"
+            email="instrev@example.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         self.course = Course.objects.create(
@@ -158,7 +158,7 @@ class ReviewModelTest(TestCase):
     def test_course_average_rating(self):
         Review.objects.create(user=self.user, course=self.course, rating=4)
         another = User.objects.create_user(
-            email="rev2@example.com", username="rev2", password="pass"
+            email="rev2@example.com",  password="pass"
         )
         StudentProfile.objects.create(user=another)
         Review.objects.create(user=another, course=self.course, rating=2)
@@ -168,11 +168,11 @@ class ReviewModelTest(TestCase):
 class WishlistItemModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email="wish@example.com", username="wish", password="pass"
+            email="wish@example.com",  password="pass"
         )
         StudentProfile.objects.create(user=self.user)
         inst = User.objects.create_user(
-            email="instwish@example.com", username="instwish", password="pass"
+            email="instwish@example.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         self.course = Course.objects.create(
@@ -189,7 +189,7 @@ class WishlistItemModelTest(TestCase):
 class PromotionModelTest(TestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="instpromo@example.com", username="instpromo", password="pass"
+            email="instpromo@example.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         self.course = Course.objects.create(

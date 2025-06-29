@@ -39,7 +39,7 @@ class LessonSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = [
             "id", "module", "course",  # <— added
-            "title", "content", "video_url", "order", "created_at"
+            "title", "content", "video_url", "order", "duration", "created_at"
         ]
         read_only_fields = ["created_at"]
 
@@ -68,6 +68,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     # Show lessons nested (read‑only by default for listing)
     lessons = LessonSerializer(many=True, read_only=True)
+    instructor    = serializers.ReadOnlyField(source="instructor.email")
+    students      = serializers.SerializerMethodField()
+    level         = serializers.CharField(source="difficulty")
+    imageUrl      = serializers.SerializerMethodField()
+    categorySlug  = serializers.SerializerMethodField()
     categories = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Category.objects.all(),
@@ -77,10 +82,27 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ["id", "title", "description", "price", "instructor", "categories", "featured", "created_at", "expires_at", "lessons"]
+        fields = [
+            "id", "title", "subtitle", "description", "learn", "about",
+            "instructor", "students", "level", "language", "price",
+            "imageUrl", "categorySlug",
+            "categories", "featured", "created_at", "expires_at", "lessons"
+        ]
         read_only_fields = ["instructor", "created_at"]
 
+    def get_students(self, obj):
+        return obj.enrollments.count()
     
+    def get_imageUrl(self, obj):
+        req = self.context.get("request")
+        if obj.promo_image:
+            return req.build_absolute_uri(obj.promo_image.url)
+        return None
+    
+    def get_categorySlug(self, obj):
+        first = obj.categories.first()
+        return first.slug if first else None
+
     def get_expires_at(self, obj):
         """Return ISO timestamp (or None) for the current user’s enrollment."""
         request = self.context.get("request")

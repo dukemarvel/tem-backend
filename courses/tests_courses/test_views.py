@@ -14,11 +14,11 @@ User = get_user_model()
 class CourseViewSetTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="inst@x.com", username="inst", password="pass"
+            email="inst@x.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         stud = User.objects.create_user(
-            email="stud@x.com", username="stud", password="pass"
+            email="stud@x.com",  password="pass"
         )
         StudentProfile.objects.create(user=stud)
 
@@ -95,7 +95,7 @@ class CourseViewSetTest(APITestCase):
 class LessonViewSetTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="i2@x.com", username="i2", password="pass"
+            email="i2@x.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         self.instructor = inst
@@ -106,7 +106,7 @@ class LessonViewSetTest(APITestCase):
         self.course = course
 
         stud = User.objects.create_user(
-            email="s2@x.com", username="s2", password="pass"
+            email="s2@x.com",  password="pass"
         )
         StudentProfile.objects.create(user=stud)
         self.student = stud
@@ -215,11 +215,11 @@ class LessonViewSetTest(APITestCase):
 class QuizViewSetTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="qi@x.com", username="qi", password="pass"
+            email="qi@x.com", password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         stud = User.objects.create_user(
-            email="qs@x.com", username="qs", password="pass"
+            email="qs@x.com",  password="pass"
         )
         StudentProfile.objects.create(user=stud)
 
@@ -308,11 +308,11 @@ class QuizViewSetTest(APITestCase):
 class QuizSubmissionTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="sub@x.com", username="subi", password="pass"
+            email="sub@x.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         stud = User.objects.create_user(
-            email="subs@x.com", username="subs", password="pass"
+            email="subs@x.com",  password="pass"
         )
         StudentProfile.objects.create(user=stud)
 
@@ -353,11 +353,11 @@ class QuizSubmissionTest(APITestCase):
 class ReviewViewSetTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="inst@rev.com", username="instrev", password="pass"
+            email="inst@rev.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         stud = User.objects.create_user(
-            email="stud@rev.com", username="studrev", password="pass"
+            email="stud@rev.com",  password="pass"
         )
         StudentProfile.objects.create(user=stud)
 
@@ -387,11 +387,11 @@ class ReviewViewSetTest(APITestCase):
 class PromotionViewSetTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="inst@promo.com", username="instpromo", password="pass"
+            email="inst@promo.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         stud = User.objects.create_user(
-            email="stud@promo.com", username="studpromo", password="pass"
+            email="stud@promo.com", password="pass"
         )
         StudentProfile.objects.create(user=stud)
 
@@ -443,11 +443,11 @@ class PromotionViewSetTest(APITestCase):
 class WishlistActionTest(APITestCase):
     def setUp(self):
         inst = User.objects.create_user(
-            email="inst@wish.com", username="instwish", password="pass"
+            email="inst@wish.com",  password="pass"
         )
         InstructorProfile.objects.create(user=inst)
         stud = User.objects.create_user(
-            email="stud@wish.com", username="studwish", password="pass"
+            email="stud@wish.com",  password="pass"
         )
         StudentProfile.objects.create(user=stud)
 
