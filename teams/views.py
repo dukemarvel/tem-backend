@@ -14,12 +14,26 @@ from payments.services import process_team_checkout
 from dj_rest_auth.registration.views import RegisterView
 from dj_rest_auth.views import LoginView
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 
-class TeamRegisterView(RegisterView):
-    """
-    POST /api/v1/teams/register/  → uses TeamRegisterSerializer
-    """
-    serializer_class = TeamRegisterSerializer
+
+class TeamRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = TeamRegisterSerializer(
+            data=request.data,
+            context={'request': request}        # ← make sure context is passed!
+        )
+        if not serializer.is_valid():
+            # <-- Log the errors so you know which fields are wrong
+            print(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save(request)
+        return Response(status=status.HTTP_201_CREATED)
+
 
 
 class TeamLoginView(LoginView):
@@ -29,11 +43,16 @@ class TeamLoginView(LoginView):
     Denies access if user isn’t an ACTIVE member of that org.
     """
     def get_response(self):
-        response = super().get_response()
-        org_id = self.request.data.get("organization")
-        user   = self.request.user
+        # re‐run the serializer so we get the actual authenticated user
+        serializer = self.get_serializer(
+            data=self.request.data,
+            context=self.get_serializer_context()
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
 
-        # enforce membership
+        # now enforce team membership
+        org_id = self.request.data.get("organization")
         if not TeamMember.objects.filter(
             organization_id=org_id,
             user=user,
@@ -41,7 +60,9 @@ class TeamLoginView(LoginView):
         ).exists():
             raise PermissionDenied("Not an active member of that team.")
 
-        return response
+        # delegate to the parent to build & return the token response
+        return super().get_response()
+
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):

@@ -4,6 +4,7 @@ from .models import Organization, TeamMember, BulkPurchase, TeamAnalyticsSnapsho
 
 
 class TeamRegisterSerializer(RegisterSerializer):
+    username = None
     first_name            = serializers.CharField()
     last_name             = serializers.CharField()
     company_name          = serializers.CharField()

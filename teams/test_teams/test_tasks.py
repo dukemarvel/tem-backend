@@ -30,12 +30,10 @@ class TasksTestCase(TestCase):
     def setUp(self):
         # Create users
         self.admin = User.objects.create_user(
-            username="admin",
             email="admin@test.com",
             password="pass"
         )
         self.member = User.objects.create_user(
-            username="member",
             email="member@test.com",
             password="pass"
         )

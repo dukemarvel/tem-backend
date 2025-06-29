@@ -12,13 +12,20 @@ User = get_user_model()
 
 class ModelsTestCase(TestCase):
     def setUp(self):
-        # existing setup
         self.user = User.objects.create_user(
-            username="admin", email="admin@example.com", password="pass"
+             email="admin@example.com", password="pass"
         )
-        self.org = Organization.objects.create(name="Acme Corp", admin=self.user)
+        # include extra fields here
+        self.org = Organization.objects.create(
+            name="Acme Corp",
+            admin=self.user,
+            company_size=100,
+            team_size=10,
+            heard_about="Referral",
+            organizational_needs="Onboarding"
+        )
         self.member_user = User.objects.create_user(
-            username="member", email="member@example.com", password="pass"
+            email="member@example.com", password="pass"
         )
         self.team_member = TeamMember.objects.create(
             organization=self.org,
@@ -37,19 +44,16 @@ class ModelsTestCase(TestCase):
         )
         self.bp.courses.add(self.course)
 
-        # new: analytics snapshot
         self.snapshot = TeamAnalyticsSnapshot.objects.create(
             organization=self.org,
             seat_usage={"total_seats": 5, "used_seats": 1, "pending_invites": 2},
-            learning_progress=[
-                {
-                    "user_id": self.member_user.id,
-                    "email": self.member_user.email,
-                    "completed": 1,
-                    "total": 5,
-                    "percent": 20
-                }
-            ]
+            learning_progress=[{
+                "user_id": self.member_user.id,
+                "email": self.member_user.email,
+                "completed": 1,
+                "total": 5,
+                "percent": 20
+            }]
         )
 
     def test_organization_str(self):
@@ -57,6 +61,13 @@ class ModelsTestCase(TestCase):
             str(self.org),
             "Acme Corp (admin: admin@example.com)"
         )
+
+    def test_organization_extra_fields(self):
+        org = self.org
+        self.assertEqual(org.company_size, 100)
+        self.assertEqual(org.team_size, 10)
+        self.assertEqual(org.heard_about, "Referral")
+        self.assertEqual(org.organizational_needs, "Onboarding")
 
     def test_team_member_str(self):
         expected = "member@example.com in Acme Corp [pending]"
@@ -68,7 +79,6 @@ class ModelsTestCase(TestCase):
         self.assertEqual(str(self.bp), expected)
 
     def test_snapshot_str(self):
-        # __str__ uses '%Y-%m-%d %H:%M'
         date_str = self.snapshot.snapshot_at.strftime("%Y-%m-%d %H:%M")
         expected = f"Analytics for Acme Corp @ {date_str}"
         self.assertEqual(str(self.snapshot), expected)

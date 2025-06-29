@@ -19,11 +19,11 @@ User = get_user_model()
 class SerializersTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="user_u", email="u@example.com", password="pass"
+             email="u@example.com", password="pass"
         )
         self.org = Organization.objects.create(name="Org", admin=self.user)
         self.member = User.objects.create_user(
-            username="member_m", email="m@example.com", password="pass"
+             email="m@example.com", password="pass"
         )
         self.tm = TeamMember.objects.create(
             organization=self.org,
