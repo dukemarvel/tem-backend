@@ -6,7 +6,7 @@ class NotificationModelTest(TestCase):
     def test_str_returns_recipient_email_and_verb(self):
         User = get_user_model()
         user = User.objects.create_user(
-            username="tester", email="tester@example.com", password="pass"
+            email="tester@example.com", password="pass"
         )
         n = Notification.objects.create(
             recipient=user,

@@ -1,5 +1,3 @@
-# notifications/tests/test_views.py
-
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -11,10 +9,10 @@ class NotificationViewsTest(TestCase):
     def setUp(self):
         User = get_user_model()
         self.user1 = User.objects.create_user(
-            username="u1", email="u1@example.com", password="pass"
+            email="u1@example.com", password="pass"
         )
         self.user2 = User.objects.create_user(
-            username="u2", email="u2@example.com", password="pass"
+            email="u2@example.com", password="pass"
         )
         # u1 gets two, u2 gets one
         Notification.objects.create(recipient=self.user1, verb="First")

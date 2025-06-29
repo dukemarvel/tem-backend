@@ -6,6 +6,7 @@ from allauth.account.signals import user_signed_up
 from payments.models import Enrollment
 from progress.models import LessonProgress, CourseProgress
 from courses.models import Lesson
+from teams.models import Organization
 
 from .models import Notification
 from .tasks import send_notification_email
@@ -23,7 +24,7 @@ def welcome_user(sender, request, user, **kwargs):
     send_notification_email.delay(
         user.email,
         "Welcome to Acadamier!",
-        f"Hi {user.username}, welcome aboard!"
+        f"Hi {user.first_name}, welcome aboard!"
     )
 
 @receiver(post_save, sender=Enrollment)
@@ -36,7 +37,7 @@ def enrollment_notification(sender, instance, created, **kwargs):
         send_notification_email.delay(
             user.email,
             f"Enrollment confirmed: {course.title}",
-            f"Congrats {user.username}! You’ve been enrolled in {course.title}."
+            f"Congrats {user.first_name}! You’ve been enrolled in {course.title}."
         )
 
 @receiver(post_save, sender=LessonProgress)
@@ -66,7 +67,7 @@ def course_completion_notification(sender, instance, **kwargs):
         send_notification_email.delay(
             user.email,
             f"Course completed: {course.title}",
-            f"Well done {user.username}! Download your certificate at /api/v1/progress/certificates/"
+            f"Well done {user.first_name}! Download your certificate at /api/v1/progress/certificates/"
         )
 
 @receiver(post_save, sender=Lesson)
@@ -89,5 +90,38 @@ def new_lesson_published(sender, instance, created, **kwargs):
             send_notification_email.delay(
                 user.email,
                 f"New lesson in {course.title}",
-                f"Hi {user.username}, a new lesson “{instance.title}” has just been published."
+                f"Hi {user.first_name}, a new lesson “{instance.title}” has just been published."
             )
+
+
+@receiver(post_save, sender=Organization)
+def org_created_notification(sender, instance: Organization, created, **kwargs):
+    if not created:
+        return
+
+    user = instance.admin
+    org_id = instance.id
+
+    # 1) In-app notification
+    Notification.objects.create(
+        recipient=user,
+        verb=f"Your team “{instance.name}” is registered — Org ID: {org_id}",
+        data={"organization_id": org_id},
+        link=None
+    )
+
+    # 2) Email notification
+    subject = "Welcome to Academier — your Organization ID"
+    message = (
+        f"Hi {user.first_name},\n\n"
+        f"Your organization “{instance.name}” has been created successfully.\n"
+        f"Your Org ID is: {org_id}\n\n"
+        "Use this ID when you log in or invite teammates.\n\n"
+        "Cheers,\n"
+        "The Academier Team"
+    )
+    send_notification_email.delay(
+        user.email,
+        subject,
+        message
+    )

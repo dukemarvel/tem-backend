@@ -2,12 +2,12 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from allauth.account.signals import user_signed_up
 from unittest.mock import patch
-
 from notifications.models import Notification
 from notifications import tasks
 from payments.models import Enrollment
 from courses.models import Course, Lesson
 from progress.models import LessonProgress, CourseProgress
+from teams.models import Organization
 
 User = get_user_model()
 
@@ -15,10 +15,10 @@ class NotificationSignalsTest(TestCase):
     def setUp(self):
         # one instructor, one student, one course
         self.instructor = User.objects.create_user(
-            username="instructor", email="inst@example.com", password="pass"
+            email="inst@example.com", password="pass"
         )
         self.student = User.objects.create_user(
-            username="student", email="stud@example.com", password="pass"
+           first_name="akanbi", email="stud@example.com", password="pass"
         )
         self.course = Course.objects.create(
             title="Demo Course",
@@ -30,7 +30,7 @@ class NotificationSignalsTest(TestCase):
     @patch.object(tasks.send_notification_email, "delay")
     def test_welcome_user_signal(self, mock_delay):
         new_user = User.objects.create_user(
-            username="newbie", email="new@example.com", password="pass"
+            email="new@example.com", password="pass"
         )
         user_signed_up.send(sender=None, request=None, user=new_user)
 
@@ -41,7 +41,7 @@ class NotificationSignalsTest(TestCase):
         mock_delay.assert_called_once_with(
             new_user.email,
             "Welcome to Acadamier!",
-            f"Hi {new_user.username}, welcome aboard!"
+            f"Hi {new_user.first_name}, welcome aboard!"
         )
 
     @patch.object(tasks.send_notification_email, "delay")
@@ -110,5 +110,39 @@ class NotificationSignalsTest(TestCase):
         mock_delay.assert_called_once_with(
             self.student.email,
             f"New lesson in {self.course.title}",
-            f"Hi {self.student.username}, a new lesson “{new_lesson.title}” has just been published."
+            f"Hi {self.student.first_name}, a new lesson “{new_lesson.title}” has just been published."
+        )
+
+
+    @patch.object(tasks.send_notification_email, "delay")
+    def test_org_created_notification(self, mock_delay):
+        # Create a new org (triggers our post_save signal)
+        org = Organization.objects.create(
+            name="BizCorp",
+            admin=self.instructor,
+            company_size=10,
+            team_size=10,
+            heard_about="Ad",
+            organizational_needs="Training"
+        )
+
+        # In-app notification contains the Org ID
+        notif = Notification.objects.filter(
+            recipient=self.instructor,
+            verb__contains=f"Org ID: {org.id}"
+        ).first()
+        self.assertIsNotNone(notif)
+
+        # Email task was enqueued with the correct args
+        mock_delay.assert_called_once_with(
+            self.instructor.email,
+            "Welcome to Academier — your Organization ID",
+            (
+                f"Hi {self.instructor.first_name},\n\n"
+                f"Your organization “{org.name}” has been created successfully.\n"
+                f"Your Org ID is: {org.id}\n\n"
+                "Use this ID when you log in or invite teammates.\n\n"
+                "Cheers,\n"
+                "The Academier Team"
+            )
         )
